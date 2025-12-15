@@ -1,0 +1,45 @@
+.section {
+
+    width: 10%;
+    justify-content: end;
+}
+
+.categorySelect {
+    width: 100%;
+    height: 100%;
+    border: none;
+    margin-left: 10px;
+    border-radius: 2px;
+    font-family: var(--mantine-font-family);
+}
+
+.categorySelect{
+    text-align: center;
+    border:none
+}
+
+.navLoginCart {
+    display: flex;
+    align-items: center;
+    gap: 45px;
+}
+
+.navLogo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navCartCount {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: -35px;
+    margin-left: -55px;
+    border-radius: 11px;
+    font-size: 14px;
+    background: red;
+    color: white;
+}

@@ -1,0 +1,19 @@
+
+.item {
+    background-color: white;
+    transition: transform 0.4s;
+}
+
+.title:hover {
+    color: var(--mantine-primary-color-filled);
+}
+
+.price {
+    font-weight: 600;
+    font-size: var(--mantine-font-size-xl);
+}
+
+.sellingPrice {
+    font-weight: 600;
+    font-size: var(--mantine-font-size-xxl);
+}

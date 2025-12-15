@@ -1,0 +1,3 @@
+# This directory will contain symlinks to Let's Encrypt certificates
+# Created by scripts/migrate-to-letsencrypt. sh
+# Symlinks will point to /etc/letsencrypt/live/app-ind.u-clo.com/

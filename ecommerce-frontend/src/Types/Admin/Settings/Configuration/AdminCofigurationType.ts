@@ -1,0 +1,48 @@
+export interface EcommerceConfigDto {
+    allow_LTAVAILINVQTY: 0 | 1;
+    
+    crAt?: string;
+    crBy?: string;
+    defaultInquiryMessage: string;
+    facebook?: string;
+    id?: number;
+    instagram?: string;
+    isAutoProcessOrders: 0 | 1;
+    isCollar: 0 | 1;
+    isColor: 0 | 1;
+    isFabric: 0 | 1;
+    isLowStockNotifications: 0 | 1;
+    isLowStockThreshold: number;
+    isModel: 0 | 1;
+    isOccasion: 0 | 1;
+    isPattern: 0 | 1;
+    isSize: 0 | 1;
+    isSleeve: 0 | 1;
+    isStockCheck: 0 | 1;
+    isWhatsapp: 0 | 1;
+    linkedin?: string;
+    location: string;
+    numberOfDecimal: string;
+    onlinePayment: 0 | 1;
+    plant: string;
+    plntDesc?: string;
+    prvsales_PERIOD: number;
+    show_MINAVAILINVQTY: 0 | 1;
+    show_PRVSALES: 0 | 1;
+    snapchat?: string;
+    tiktok?: string;
+    twitter?: string;
+    upAt?: string;
+    upBy?: string;
+    whatsappNumber: string;
+    youtube?: string;
+    isLoyaltyPointsEnabled: boolean;
+    loyaltyExpireDays: number;
+    fast2SmsApiKey: string;
+    delhiveryApiKey: string;
+    whatsappBusinessApiKey: string;
+    isShippingApiEnabled: boolean;
+    isWhatsappBusinessApiEnabled: boolean;
+    isBroadcastEnabled?: boolean;   
+    broadcastMessage?: string;      
+}

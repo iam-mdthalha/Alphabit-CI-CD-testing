@@ -1,0 +1,20 @@
+.navbar {
+  background-color: black;
+  color: white;
+}
+
+.menuItem {
+  cursor: pointer;
+}
+
+.menuItemHover:hover {
+  color: red;
+  border-bottom: 2px solid white;
+}
+
+/* .marquee {
+  display: inline-block;
+  animation: scroll-left 10s linear infinite;
+  font-size: 14px;
+  color: red;
+} */

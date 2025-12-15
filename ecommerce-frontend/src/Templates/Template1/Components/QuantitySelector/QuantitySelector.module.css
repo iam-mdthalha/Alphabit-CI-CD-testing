@@ -1,0 +1,15 @@
+.wrapper {
+    height: 30px;
+}
+
+.input {
+    font-size: var(----mantine-font-size-md);
+    width: 90px;
+    text-align: justify;
+}
+
+.section {
+    width: 25px;
+    height: 25px;
+    display: flex;
+}

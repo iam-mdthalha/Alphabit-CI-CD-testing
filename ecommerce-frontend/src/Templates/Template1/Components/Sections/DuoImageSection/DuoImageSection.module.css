@@ -1,0 +1,13 @@
+.container {
+    /* width: var(--section-width);
+    height: var(--section-height); */
+    padding-inline: 25px;
+    background-color: var(--mantine-color-white);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+
+.ctaText:hover {
+    text-decoration: underline;
+}

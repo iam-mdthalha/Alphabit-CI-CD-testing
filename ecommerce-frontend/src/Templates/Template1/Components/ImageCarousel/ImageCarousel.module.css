@@ -1,0 +1,9 @@
+
+.carousel {
+    margin: auto;
+    background-color: var(--mantine-carousel-arrow-color)
+}
+
+.control{
+    background-color: var(--mantine-carousel-arrow-color);
+}

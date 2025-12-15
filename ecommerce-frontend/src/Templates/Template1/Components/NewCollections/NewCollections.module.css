@@ -1,0 +1,7 @@
+.ctaText:hover{
+    text-decoration: underline;
+}
+
+.control{
+    background-color: var(--mantine-carousel-arrow-color);
+}

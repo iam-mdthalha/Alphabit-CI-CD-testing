@@ -1,0 +1,392 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams, useParams } from "react-router-dom";
+import {
+  useGetListOfBookLanguageProductsQuery,
+  useGetListOfBookProductsWithFilterQuery,
+  useGetProductsBySearchQuery,
+} from "Services/ProductApiSlice";
+
+import { change } from "State/SortSlice/SortSlice";
+import type { RootState, AppDispatch } from "State/store";
+import FilterSidebar from "Templates/Template4/Components/Common/FilterSidebar";
+import SortDropdown from "Templates/Template4/Components/Common/SortDropdown";
+import ProductCard from "Templates/Template4/Components/Common/ProductCard";
+import CircleLoader from "Templates/Template1/Components/CircleLoader/CircleLoader";
+import { handleSort } from "Utilities/SortHandler";
+import { useSearch } from "Context/SearchContext";
+
+interface ProductResponse {
+  results?: {
+    products: any[];
+    totalProducts: number;
+  };
+  products?: any[];
+  totalProducts?: number;
+}
+
+const parsePriceRange = (
+  priceRange: string
+): { fromprice: number; Toprice: number } | null => {
+  const match = priceRange.match(/Rs\. (\d+) - Rs\. (\d+)/);
+  if (match) {
+    const [, minPrice, maxPrice] = match;
+    return { fromprice: parseFloat(minPrice), Toprice: parseFloat(maxPrice) };
+  }
+
+  if (priceRange.includes("above")) {
+    const minPriceMatch = priceRange.match(/Rs\. (\d+) above/);
+    if (minPriceMatch) {
+      const minPrice = parseFloat(minPriceMatch[1]);
+      return { fromprice: minPrice, Toprice: 1000000 };
+    }
+  }
+
+  return null;
+};
+
+const Languages: React.FC = () => {
+  const { language } = useParams<{ language: string }>();
+  const dispatch: AppDispatch = useDispatch();
+  const { value: sort } = useSelector((state: RootState) => state.sort);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activePage, setActivePage] = useState(1);
+  const pageSize = 12;
+
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(
+    {}
+  );
+
+  const { searchTerm } = useSearch();
+
+  const filterParams = useMemo(() => {
+    const params: any = {
+      mode: "CRITERIA",
+      page: activePage,
+      productsCount: pageSize,
+    };
+
+    if (language) {
+      params.language = language;
+    }
+
+    Object.entries(selectedFilters).forEach(([key, selected]) => {
+      if (selected.length > 0 && key !== "price") {
+        const apiParamMap: Record<string, string> = {
+          category: "category",
+          subCategory: "subClass",
+          author: "author",
+          language: "language",
+          academic: "academic",
+          merchandise: "merchandise",
+        };
+
+        const apiParam = apiParamMap[key] || key;
+        params[apiParam] = selected.join(",");
+      }
+    });
+
+    if (selectedFilters.price && selectedFilters.price.length > 0) {
+      const priceRanges = selectedFilters.price
+        .map(parsePriceRange)
+        .filter(Boolean);
+
+      if (priceRanges.length > 0) {
+        const firstRange = priceRanges[0];
+        if (firstRange) {
+          params.fromprice = firstRange.fromprice;
+          params.Toprice = firstRange.Toprice;
+        }
+      }
+    }
+
+    return params;
+  }, [selectedFilters, activePage, pageSize, language]);
+
+  const hasFilters = Object.values(selectedFilters).some(
+    (sel) => sel.length > 0
+  );
+  const hasNonPriceFilters = Object.entries(selectedFilters).some(
+    ([key, sel]) => key !== "price" && sel.length > 0
+  );
+
+  const { data: bookLanguageProducts, isLoading: bookLanguageLoading } =
+    useGetListOfBookLanguageProductsQuery(
+      {
+        languageNames: language ? [language] : [],
+        page: activePage,
+        productsCount: pageSize,
+      },
+      {
+        skip: Boolean(searchTerm) || hasFilters || !language,
+      }
+    );
+
+  const { data: filteredProducts, isLoading: filteredLoading } =
+    useGetListOfBookProductsWithFilterQuery(filterParams, {
+      skip: Boolean(searchTerm) || !hasFilters || !language,
+    });
+
+  const { data: searchResults, isLoading: searchLoading } = useGetProductsBySearchQuery(
+    {
+      searchValue: searchTerm || "",
+      searchOffsetValue: "",
+      pageSize,
+      activePage,
+    },
+    { skip: !searchTerm }
+  );
+
+  const languageResponse = bookLanguageProducts as ProductResponse;
+  const filteredResponse = filteredProducts as ProductResponse;
+  const searchResponse = searchResults as ProductResponse;
+
+  const languageProductsData =
+    languageResponse?.results?.products || languageResponse?.products || [];
+  const languageTotalProducts =
+    languageResponse?.results?.totalProducts ||
+    languageResponse?.totalProducts ||
+    0;
+
+  const filteredProductsData =
+    filteredResponse?.results?.products || filteredResponse?.products || [];
+  const filteredTotalProducts =
+    filteredResponse?.results?.totalProducts ||
+    filteredResponse?.totalProducts ||
+    0;
+
+  const searchProductsData =
+    searchResponse?.results?.products || searchResponse?.products || [];
+  const searchTotalProducts =
+    searchResponse?.results?.totalProducts || searchResponse?.totalProducts || 0;
+
+  const currentProducts = useMemo(() => {
+    if (searchTerm && searchProductsData.length > 0) {
+      return handleSort([...searchProductsData], sort);
+    }
+
+    if (hasFilters && filteredProductsData.length > 0) {
+      let products = [...filteredProductsData];
+
+      if (selectedFilters.price && selectedFilters.price.length > 1) {
+        const priceRanges = selectedFilters.price
+          .map(parsePriceRange)
+          .filter(Boolean);
+
+        products = products.filter((product) => {
+          return priceRanges.some((range: any) => {
+            const price = product.product.ecomUnitPrice;
+            return price >= range.fromprice && price <= range.Toprice;
+          });
+        });
+      }
+
+      return handleSort(products, sort);
+    }
+
+    if (languageProductsData.length > 0 && !hasFilters) {
+      return handleSort(languageProductsData, sort);
+    }
+
+    if (languageProductsData.length > 0 && hasFilters && !hasNonPriceFilters) {
+      let filtered = [...languageProductsData];
+
+      if (selectedFilters.price && selectedFilters.price.length > 0) {
+        const priceRanges = selectedFilters.price
+          .map(parsePriceRange)
+          .filter(Boolean);
+
+        filtered = filtered.filter((product) => {
+          const price = product.product.ecomUnitPrice;
+          return priceRanges.some(
+            (range: any) => price >= range.fromprice && price <= range.Toprice
+          );
+        });
+      }
+
+      return handleSort(filtered, sort);
+    }
+
+    return [];
+  }, [
+    searchTerm,
+    searchProductsData,
+    languageProductsData,
+    filteredProductsData,
+    selectedFilters,
+    sort,
+    hasFilters,
+    hasNonPriceFilters,
+  ]);
+
+  const isLoading =
+    searchTerm && searchProductsData.length > 0
+      ? searchLoading
+      : !hasFilters
+      ? bookLanguageLoading
+      : filteredLoading;
+
+  const totalProducts = useMemo(() => {
+    if (searchTerm && searchProductsData.length > 0) {
+      return searchTotalProducts;
+    }
+
+    if (!hasFilters) {
+      return languageTotalProducts;
+    }
+
+    if (hasNonPriceFilters) {
+      return filteredTotalProducts;
+    }
+
+    return currentProducts.length;
+  }, [
+    searchTerm,
+    searchProductsData,
+    searchTotalProducts,
+    languageTotalProducts,
+    filteredTotalProducts,
+    currentProducts.length,
+    hasFilters,
+    hasNonPriceFilters,
+  ]);
+
+  const totalPages = Math.ceil(totalProducts / pageSize);
+
+  const paginate = (pageNumber: number) => {
+    setSearchParams({ page: pageNumber.toString() });
+    setActivePage(pageNumber);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleFilterChange = (
+    filter: string,
+    category: string,
+    checked: boolean
+  ) => {
+    setSelectedFilters((prev: any) => {
+      const prevCategoryFilters = prev[category] || [];
+      let updatedCategoryFilters = [];
+      if (checked) {
+        updatedCategoryFilters = [...prevCategoryFilters, filter];
+      } else {
+        updatedCategoryFilters = prevCategoryFilters.filter(
+          (f: any) => f !== filter
+        );
+      }
+      return {
+        ...prev,
+        [category]: updatedCategoryFilters,
+      };
+    });
+    setActivePage(1);
+  };
+
+  useEffect(() => {
+    setActivePage(1);
+  }, [selectedFilters]);
+
+  useEffect(() => {
+    const pageParam = searchParams.get("page");
+    if (pageParam) {
+      const page = parseInt(pageParam, 10);
+      if (!isNaN(page) && page > 0) {
+        setActivePage(page);
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    dispatch(change("price-asc"));
+  }, [dispatch]);
+
+ 
+  return (
+    <div className="min-h-screen bg-vintageBg font-gilroyRegular tracking-wider">
+      <div className="py-3 md:py-12 px-6 lg:px-24 flex gap-8">
+        <aside className="hidden md:block w-1/4 sticky top-20 self-start">
+          <FilterSidebar
+            selectedFilters={selectedFilters}
+            onFilterChange={handleFilterChange}
+            pageType="Language"
+          />
+        </aside>
+
+        <main className="flex-1">
+          {totalProducts > 0 && (
+            <div
+              data-aos="fade-down"
+              className="hidden md:flex justify-between items-center mb-6 bg-opacity-70 px-4 py-2 rounded-lg shadow-sm"
+            >
+              <span className="text-base text-vintageText">
+                Showing <strong>{(activePage - 1) * pageSize + 1}</strong> –{" "}
+                <strong>{Math.min(activePage * pageSize, totalProducts)}</strong>{" "}
+                of <strong>{totalProducts}</strong> results for{" "}
+                <strong className="capitalize">
+                  Language{language ? ` : ${language}` : ""}
+                </strong>
+              </span>
+              <SortDropdown
+                selectedSort={sort}
+                onSortChange={(value) => dispatch(change(value))}
+              />
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="w-full h-96 flex justify-center items-center">
+              <CircleLoader />
+            </div>
+          ) : currentProducts.length === 0 ? (
+            <div className="text-center py-8 text-vintageText">
+              No Products Available
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-6">
+              {currentProducts.map((product: any) => (
+                <ProductCard key={product.product.id} product={product} />
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-12">
+              <nav className="flex items-center gap-2">
+                <button
+                  disabled={activePage === 1}
+                  onClick={() => paginate(activePage - 1)}
+                  className="px-3 py-2 border rounded-md text-vintageText border-opacity-50 hover:bg-vintageText hover:text-white disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                {[...Array(totalPages)].map((_, idx) => (
+                  <button
+                    key={idx + 1}
+                    onClick={() => paginate(idx + 1)}
+                    className={`px-3 py-2 border rounded-md ${
+                      activePage === idx + 1
+                        ? "bg-vintageText text-white"
+                        : "border-vintageText border-opacity-50 text-vintageText hover:bg-vintageText hover:text-white"
+                    }`}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+                <button
+                  disabled={activePage === totalPages}
+                  onClick={() => paginate(activePage + 1)}
+                  className="px-3 py-2 border rounded-md text-vintageText border-opacity-50 hover:bg-vintageText hover:text-white disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </nav>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Languages;
