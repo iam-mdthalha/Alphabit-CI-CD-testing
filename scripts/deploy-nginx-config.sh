@@ -176,11 +176,11 @@ else
     echo "   Restoring backup..."
     
     # Restore backup
-    if [ -f "${BACKUP_DIR}/nginx. conf" ]; then
-        cp "${BACKUP_DIR}/nginx. conf" "${NGINX_SYSTEM_DIR}/nginx.conf"
+    if [ -f "${BACKUP_DIR}/nginx.conf" ]; then
+        cp "${BACKUP_DIR}/nginx.conf" "${NGINX_SYSTEM_DIR}/nginx.conf"
     fi
     if [ -d "${BACKUP_DIR}/conf.d" ]; then
-        rm -rf "${NGINX_SYSTEM_DIR}/conf. d"
+        rm -rf "${NGINX_SYSTEM_DIR}/conf.d"
         cp -r "${BACKUP_DIR}/conf.d" "${NGINX_SYSTEM_DIR}/"
     fi
     
