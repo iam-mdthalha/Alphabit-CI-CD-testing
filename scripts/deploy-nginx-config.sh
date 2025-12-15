@@ -73,7 +73,7 @@ fi
 
 # Backup conf.d directory if it exists
 if [ -d "${NGINX_SYSTEM_DIR}/conf.d" ]; then
-    cp -r "${NGINX_SYSTEM_DIR}/conf. d" "${BACKUP_DIR}/"
+    cp -r "${NGINX_SYSTEM_DIR}/conf.d" "${BACKUP_DIR}/"
     echo "   Backed up: conf.d/"
 fi
 
