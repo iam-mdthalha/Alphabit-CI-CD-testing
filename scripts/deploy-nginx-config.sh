@@ -118,13 +118,13 @@ echo "[5/7] Copying site configurations..."
 
 # Remove default config if it exists (it conflicts with our config)
 if [ -f "${NGINX_SYSTEM_DIR}/conf.d/default.conf" ]; then
-    rm "${NGINX_SYSTEM_DIR}/conf. d/default.conf"
-    echo "   Removed: default. conf (conflicts with our config)"
+    rm "${NGINX_SYSTEM_DIR}/conf.d/default.conf"
+    echo "   Removed: default.conf (conflicts with our config)"
 fi
 
-# Copy all . conf files from project conf.d to system conf.d
+# Copy all .conf files from project conf.d to system conf.d
 if [ -d "${NGINX_PROJECT_DIR}/conf.d" ]; then
-    for conf_file in "${NGINX_PROJECT_DIR}/conf.d"/*. conf; do
+    for conf_file in "${NGINX_PROJECT_DIR}/conf.d"/*.conf; do
         if [ -f "$conf_file" ]; then
             cp "$conf_file" "${NGINX_SYSTEM_DIR}/conf.d/"
             echo "   Copied: $(basename $conf_file)"
@@ -145,7 +145,7 @@ chown -R root:root "${NGINX_SYSTEM_DIR}/nginx.conf" 2>/dev/null || true
 
 # Set file permissions
 chmod 644 "${NGINX_SYSTEM_DIR}/nginx.conf" 2>/dev/null || true
-chmod 644 "${NGINX_SYSTEM_DIR}/conf.d"/*. conf 2>/dev/null || true
+chmod 644 "${NGINX_SYSTEM_DIR}/conf.d"/*.conf 2>/dev/null || true
 
 # SSL directory permissions
 chmod 755 "${NGINX_SYSTEM_DIR}/ssl"
