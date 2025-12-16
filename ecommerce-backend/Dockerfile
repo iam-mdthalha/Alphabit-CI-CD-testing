@@ -31,7 +31,7 @@ RUN apk add --no-cache \
 
 # Copy package files first for better caching
 # If package.json hasn't changed, Docker uses cached node_modules
-COPY package. json package-lock.json* ./
+COPY package.json package-lock.json*./
 
 # Install only production dependencies
 # --only=production excludes devDependencies (testing tools, etc.)
