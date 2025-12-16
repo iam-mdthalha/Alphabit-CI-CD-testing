@@ -1,0 +1,33 @@
+{
+  "name": "ecommerce-backend",
+  "version":  "1.0.0",
+  "description": "Ecommerce Backend API - Node.js Express Server",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"No tests configured yet\" && exit 0",
+    "lint": "eslint src/",
+    "lint:fix":  "eslint src/ --fix"
+  },
+  "keywords": [
+    "ecommerce",
+    "api",
+    "express",
+    "nodejs"
+  ],
+  "author":  "DevOps Team",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
