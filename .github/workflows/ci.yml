@@ -1,10 +1,10 @@
-name: CD Pipeline (Disabled Temporarily)
+name: Disabled Workflow
 
 on:
   workflow_dispatch:
 
 jobs:
-  dummy:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "CD pipeline disabled temporarily"
+      - run: echo "Workflow disabled"
