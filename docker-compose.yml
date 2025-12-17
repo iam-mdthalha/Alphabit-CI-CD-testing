@@ -30,8 +30,8 @@ services:
       start_period: 40s
     networks:
       - app-network
-    depends_on:
-      - ecommerce-backend
+    # depends_on:
+    #   - ecommerce-backend
 
   # ecommerce-backend:
   #   build:
