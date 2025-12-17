@@ -13,17 +13,17 @@ services:
       - "3000:80"
     command: ["npm", "start"]
 
-  ecommerce-backend:
-    volumes:
-      - ./ecommerce-backend/src:/app/src
-      - ./ecommerce-backend/package.json:/app/package.json
-      - ./ecommerce-backend/.env:/app/.env
-    environment:
-      - NODE_ENV=development
-      - PORT=4000
-    ports:
-      - "4000:4000"
-    command: ["npm", "run", "dev"]
+  # ecommerce-backend:
+  #   volumes:
+  #     - ./ecommerce-backend/src:/app/src
+  #     - ./ecommerce-backend/package.json:/app/package.json
+  #     - ./ecommerce-backend/.env:/app/.env
+  #   environment:
+  #     - NODE_ENV=development
+  #     - PORT=4000
+  #   ports:
+  #     - "4000:4000"
+  #   command: ["npm", "run", "dev"]
 
 networks:
   app-network:
