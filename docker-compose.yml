@@ -1,0 +1,100 @@
+version: "3.8"
+
+# ============================================================================
+# ECOMMERCE PRODUCTION DOCKER COMPOSE
+# Run all containers as a single application stack.
+# Only use the app-network as defined.
+# All environment variables come from .env files.
+# ============================================================================
+
+services:
+
+  ecommerce-frontend:
+    build:
+      context: ./ecommerce-frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL}
+        REACT_APP_ENV: ${REACT_APP_ENV}
+    container_name: ecommerce-frontend
+    env_file:
+      - ./ecommerce-frontend/.env
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - app-network
+    depends_on:
+      - ecommerce-backend
+
+  ecommerce-backend:
+    build:
+      context: ./ecommerce-backend
+      dockerfile: Dockerfile
+    container_name: ecommerce-backend
+    env_file:
+      - ./ecommerce-backend/.env
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - app-network
+
+  # ===========================================
+  # TEMPLATE: Copy these blocks for new apps
+  # ===========================================
+  # app2-frontend:
+  #   build: ./app2-frontend
+  #   container_name: app2-frontend
+  #   ports:
+  #     - "3001:80"
+  #   env_file:
+  #     - ./app2-frontend/.env
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:80"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # app2-backend:
+  #   build: ./app2-backend
+  #   container_name: app2-backend
+  #   ports:
+  #     - "4001:4001"
+  #   env_file:
+  #     - ./app2-backend/.env
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+networks:
+  app-network:
+    driver: bridge
+
+# ===========================================
+# FUTURE SERVICES (Do not implement yet)
+# ===========================================
+# jenkins:
+# prometheus:
+# grafana:
+# loki:
