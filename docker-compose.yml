@@ -6,28 +6,28 @@
 # ============================================================================
 
 services:
-
   ecommerce-frontend:
+    container_name: ecommerce-frontend
     build:
       context: ./ecommerce-frontend
       dockerfile: Dockerfile
       args:
         REACT_APP_API_URL: ${REACT_APP_API_URL}
-        REACT_APP_ENV: ${REACT_APP_ENV}
-    container_name: ecommerce-frontend
+        REACT_APP_ENV: production
     env_file:
       - ./ecommerce-frontend/.env
     ports:
       - "3000:80"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:80"]
+      test: ["CMD", "wget", "-qO-", "http://localhost"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     networks:
       - app-network
+
     # depends_on:
     #   - ecommerce-backend
 
