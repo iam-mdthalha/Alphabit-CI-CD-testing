@@ -1,5 +1,3 @@
-version: "3.8"
-
 # ============================================================================
 # ECOMMERCE PRODUCTION DOCKER COMPOSE
 # Run all containers as a single application stack.
@@ -23,7 +21,7 @@ services:
       - "3000:80"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
