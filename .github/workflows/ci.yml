@@ -111,42 +111,42 @@ jobs:
   # ===========================================================================
   # JOB 2: Lint and Test Backend (Template - Uncomment when backend is ready)
   # ===========================================================================
-  lint-and-test-backend:
-    name: 🔍 Lint & Test Backend
-    runs-on: ubuntu-latest
+  # lint-and-test-backend:
+  #   name: 🔍 Lint & Test Backend
+  #   runs-on: ubuntu-latest
     
-    # Skip this job if backend directory doesn't have package.json
-    # Remove this condition when backend is active
-    if: ${{ hashFiles('ecommerce-backend/package.json') != '' }}
+  #   # Skip this job if backend directory doesn't have package.json
+  #   # Remove this condition when backend is active
+  #   if: ${{ hashFiles('ecommerce-backend/package.json') != '' }}
     
-    defaults:
-      run:
-        working-directory: ${{ env.BACKEND_DIR }}
+  #   defaults:
+  #     run:
+  #       working-directory: ${{ env.BACKEND_DIR }}
     
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: 📥 Checkout Repository
+  #       uses: actions/checkout@v4
       
-      - name:  📦 Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: ${{ env.BACKEND_DIR }}/package-lock.json
+  #     - name:  📦 Setup Node.js ${{ env.NODE_VERSION }}
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ env.NODE_VERSION }}
+  #         cache: 'npm'
+  #         cache-dependency-path: ${{ env.BACKEND_DIR }}/package-lock.json
       
-      - name:  📚 Install Dependencies
-        run: npm ci
+  #     - name:  📚 Install Dependencies
+  #       run: npm ci
       
-      - name: 🔎 TypeScript Type Check
-        run: npx tsc --noEmit
-        continue-on-error:  true
-        # continue-on-error:  Backend might not have TypeScript yet
+  #     - name: 🔎 TypeScript Type Check
+  #       run: npx tsc --noEmit
+  #       continue-on-error:  true
+  #       # continue-on-error:  Backend might not have TypeScript yet
       
-      - name: 🧹 Run ESLint
-        run:  npm run lint --if-present
+  #     - name: 🧹 Run ESLint
+  #       run:  npm run lint --if-present
       
-      - name:  🧪 Run Tests
-        run: npm run test --if-present -- --passWithNoTests
+  #     - name:  🧪 Run Tests
+  #       run: npm run test --if-present -- --passWithNoTests
 
   # ===========================================================================
   # JOB 3: Build Docker Images
