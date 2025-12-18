@@ -96,7 +96,7 @@ RUN apk add --no-cache curl
 
 # Remove default Nginx configuration
 # We'll replace it with our custom config for React SPA routing
-RUN rm /etc/nginx/conf. d/default.conf
+RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy our custom Nginx configuration
 # This config handles React Router (SPA routing)
