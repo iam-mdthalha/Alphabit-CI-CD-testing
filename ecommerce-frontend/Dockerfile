@@ -35,16 +35,23 @@ RUN apk add --no-cache \
     g++
 
 # Copy package files first (for better Docker layer caching)
-# Docker caches layers, so if package.json hasn't changed,
+# Docker caches layers, so if package. json hasn't changed,
 # npm ci won't run again (faster builds)
 COPY package.json package-lock.json* ./
+
+# Create . npmrc to handle peer dependency conflicts
+# This is needed because: 
+# - react-scripts@5.0.1 requires TypeScript ^3.2.1 || ^4
+# - zod@4 and @mantine/core@7 require TypeScript 5.0+
+RUN echo "legacy-peer-deps=true" > .npmrc
 
 # Install dependencies
 # Using 'npm ci' instead of 'npm install' because: 
 # - It's faster (skips some steps)
 # - It's stricter (uses exact versions from package-lock.json)
 # - It's more reliable for CI/CD pipelines
-RUN npm ci
+# --legacy-peer-deps flag handles TypeScript version conflicts
+RUN npm ci --legacy-peer-deps
 
 # Copy all source code to the container
 # This happens AFTER npm ci so changes to source code
@@ -55,13 +62,16 @@ COPY . .
 # These are used during 'npm run build' only
 ARG REACT_APP_API_URL
 ARG REACT_APP_ENV=production
+ARG CI=false
 
 # Make ARG values available as ENV during build
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 ENV REACT_APP_ENV=$REACT_APP_ENV
+ENV CI=$CI
 
 # Build the React application for production
 # This creates optimized static files in the /app/build directory
+# CI=false prevents treating warnings as errors
 RUN npm run build
 
 # =============================================================================
@@ -86,7 +96,7 @@ RUN apk add --no-cache curl
 
 # Remove default Nginx configuration
 # We'll replace it with our custom config for React SPA routing
-RUN rm /etc/nginx/conf.d/default.conf
+RUN rm /etc/nginx/conf. d/default.conf
 
 # Copy our custom Nginx configuration
 # This config handles React Router (SPA routing)
