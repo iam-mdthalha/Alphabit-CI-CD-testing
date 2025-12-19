@@ -165,7 +165,7 @@ jobs:
           for i in 1 2 3 4 5; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
               --connect-timeout 10 --max-time 30 \
-              "http://${{ secrets.EC2_HOST }}:3000" || echo "000")
+              "http://${{ secrets.EC2_HOST }}" || echo "000")
 
             echo "Attempt $i → HTTP $STATUS"
 
