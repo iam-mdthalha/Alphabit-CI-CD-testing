@@ -116,11 +116,11 @@ jobs:
       - name: 🏷️ Generate Docker Metadata
         id: meta
         uses: docker/metadata-action@v5
-        with: 
-          images: ${{ secrets.DOCKER_USERNAME }}/${{ matrix.app }}
+        with:
+          # Use dedicated repository name from secrets
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ vars.DOCKER_REPO_FRONTEND || 'ecommerce-frontend' }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=ref,event=branch
             type=sha,prefix=,format=short
 
       - name: 🏗️ Build and Push Docker Image
