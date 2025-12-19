@@ -247,7 +247,7 @@ jobs:
           EC2_HOST:  ${{ secrets.EC2_HOST }}
           EC2_USER:  ${{ secrets.EC2_USER }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          PREVIOUS_TAG: ${{ github.run_number - 1 }}
+          PREVIOUS_TAG: ${{ github.run_number-1 }}
         run:  |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             $EC2_USER@$EC2_HOST << ENDSSH
