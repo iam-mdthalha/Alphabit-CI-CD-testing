@@ -10,3 +10,4 @@ Production-ready CI/CD setup for Alphabit application with:
 > Secrets are managed via GitHub Actions and server-side `.env` files.
 
 Deployement Test
+SSH Open to 0.0.0.0/0
