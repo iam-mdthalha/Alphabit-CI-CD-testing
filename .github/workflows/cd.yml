@@ -2,13 +2,13 @@
 # 🟡 GITHUB ACTIONS CD WORKFLOW (Continuous Deployment)
 # =============================================================================
 
-name: CD Pipeline
+name:  CD Pipeline
 
 # =============================================================================
 # TRIGGERS
 # =============================================================================
 on:
-  push:
+  push: 
     branches:
       - main
 
@@ -17,8 +17,8 @@ on:
       environment:
         description: 'Deployment environment'
         required: true
-        default: 'production'
-        type: choice
+        default:  'production'
+        type:  choice
         options:
           - production
           - staging
@@ -26,7 +26,7 @@ on:
 # =============================================================================
 # GLOBAL ENV
 # =============================================================================
-env:
+env: 
   NODE_VERSION: '20'
   FRONTEND_DIR: 'ecommerce-frontend'
   BACKEND_DIR: 'ecommerce-backend'
@@ -38,17 +38,18 @@ env:
 # =============================================================================
 jobs:
 
-# =============================================================================
-# JOB 1: BUILD & PUSH
-# =============================================================================
+  # ===========================================================================
+  # JOB 1: BUILD & PUSH
+  # ===========================================================================
   build-and-push:
-    name: 🐳 Build & Push Docker Image
-    runs-on: ubuntu-latest
+    name:  🐳 Build & Push Docker Image
+    runs-on:  ubuntu-latest
 
-    outputs:
+    outputs: 
       image_digest: ${{ steps.build.outputs.digest }}
+      image_tag: ${{ github.run_number }}
 
-    steps:
+    steps: 
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
@@ -64,7 +65,7 @@ jobs:
       - name: 🏷️ Docker Metadata
         id: meta
         uses: docker/metadata-action@v5
-        with:
+        with: 
           images: ${{ secrets.DOCKER_USERNAME }}/ecommerce-frontend
           tags: |
             type=raw,value=latest
@@ -73,26 +74,32 @@ jobs:
 
       - name: 🏗️ Build & Push Image
         id: build
-        uses: docker/build-push-action@v5
+        uses:  docker/build-push-action@v5
         with:
-          context: ./${{ env.FRONTEND_DIR }}
+          context: ./${{ env. FRONTEND_DIR }}
           file: ./${{ env.FRONTEND_DIR }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: ${{ steps. meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             CI=false
             REACT_APP_ENV=production
 
-# =============================================================================
-# JOB 2: DEPLOY
-# =============================================================================
+      - name: 📋 Build Summary
+        run: |
+          echo "### 🐳 Docker Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # JOB 2: DEPLOY
+  # ===========================================================================
   deploy:
     name: 🚀 Deploy to EC2
     runs-on: ubuntu-latest
     needs: build-and-push
+    if: needs.build-and-push.result == 'success'
 
     steps:
       - name: 🔑 Setup SSH
@@ -100,83 +107,130 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 400 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: 🚀 Deploy Application
-        env:
+        env: 
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key $EC2_USER@$EC2_HOST \
-          "DEPLOY_PATH='${DEPLOY_PATH}' bash -s" << 'EOF'
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
+            $EC2_USER@$EC2_HOST << ENDSSH
             set -e
 
+            echo "=========================================="
             echo "🚀 Deployment started"
+            echo "=========================================="
 
-            mkdir -p "$DEPLOY_PATH"
-            cd "$DEPLOY_PATH"
+            # Create deploy directory if not exists
+            sudo mkdir -p $DEPLOY_PATH
+            sudo chown \$USER:\$USER $DEPLOY_PATH
+            cd $DEPLOY_PATH
 
-            docker login -u "${{ secrets.DOCKER_USERNAME }}" \
-              -p "${{ secrets.DOCKER_PASSWORD }}"
+            # Login to Docker Hub
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-            docker pull ${{ secrets.DOCKER_USERNAME }}/ecommerce-frontend:latest
+            # Pull latest image
+            echo "📥 Pulling latest image..."
+            docker pull $DOCKER_USERNAME/ecommerce-frontend:latest
 
+            # Deploy using docker-compose or standalone
             if [ -f docker-compose.yml ]; then
-              docker compose down || true
+              echo "📄 Using docker-compose..."
+              docker compose down --remove-orphans || true
               docker compose up -d
             else
-              docker stop ecommerce-frontend || true
-              docker rm ecommerce-frontend || true
+              echo "🐳 Running standalone container..."
+              docker stop ecommerce-frontend 2>/dev/null || true
+              docker rm ecommerce-frontend 2>/dev/null || true
 
               docker run -d \
                 --name ecommerce-frontend \
                 --restart unless-stopped \
                 -p 3000:80 \
-                ${{ secrets.DOCKER_USERNAME }}/ecommerce-frontend:latest
+                $DOCKER_USERNAME/ecommerce-frontend:latest
             fi
 
+            # Cleanup old images
             docker image prune -f
-            echo "✅ Deployment complete"
-          EOF
 
-# =============================================================================
-# JOB 3: HEALTH CHECK
-# =============================================================================
+            echo "=========================================="
+            echo "✅ Deployment complete"
+            echo "=========================================="
+          ENDSSH
+
+      - name: 📋 Deploy Summary
+        run: |
+          echo "### 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "**Server:** ${{ secrets.EC2_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # JOB 3: HEALTH CHECK
+  # ===========================================================================
   health-check:
     name: 🏥 Health Check
     runs-on: ubuntu-latest
     needs: deploy
+    if: needs.deploy.result == 'success'
+
+    outputs:
+      status: ${{ steps.check.outputs.status }}
 
     steps:
-      - name: ⏳ Wait for App
-        run: sleep 15
+      - name:  ⏳ Wait for App to Start
+        run: sleep 20
 
       - name: 🏥 Check Health
+        id: check
         run: |
-          for i in {1..5}; do
+          echo "Checking application health..."
+          
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i of 5..."
+            
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-              http://${{ secrets.EC2_HOST }}:3000 || echo 000)
+              --connect-timeout 10 --max-time 30 \
+              "http://${{ secrets.EC2_HOST }}:3000" || echo "000")
 
-            echo "Attempt $i → $STATUS"
+            echo "HTTP Status: $STATUS"
 
-            if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ]; then
-              echo "✅ App is healthy"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+              echo "✅ Application is healthy!"
+              echo "status=healthy" >> $GITHUB_OUTPUT
               exit 0
             fi
 
-            sleep 10
+            if [ $i -lt 5 ]; then
+              echo "Waiting 10 seconds before retry..."
+              sleep 10
+            fi
           done
 
-          echo "❌ Health check failed"
+          echo "❌ Health check failed after 5 attempts"
+          echo "status=unhealthy" >> $GITHUB_OUTPUT
           exit 1
 
-# =============================================================================
-# JOB 4: ROLLBACK
-# =============================================================================
+      - name: 📋 Health Summary
+        if: always()
+        run: |
+          echo "### 🏥 Health Check" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.status }}" = "healthy" ]; then
+            echo "✅ **Status:** Healthy" >> $GITHUB_STEP_SUMMARY
+            echo "🌐 **URL:** http://${{ secrets.EC2_HOST }}:3000" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Unhealthy" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ===========================================================================
+  # JOB 4: ROLLBACK (Only if health check fails)
+  # ===========================================================================
   rollback:
     name: 🔄 Rollback
-    runs-on: ubuntu-latest
+    runs-on:  ubuntu-latest
     needs: health-check
     if: failure()
 
@@ -186,30 +240,56 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 400 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: 🔄 Rollback Deployment
-        run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+        env:
+          EC2_HOST:  ${{ secrets.EC2_HOST }}
+          EC2_USER:  ${{ secrets.EC2_USER }}
+          DOCKER_USERNAME: ${{ secrets. DOCKER_USERNAME }}
+          PREVIOUS_TAG: ${{ github.run_number - 1 }}
+        run:  |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            $EC2_USER@$EC2_HOST << ENDSSH
             set -e
 
-            PREVIOUS_TAG=$(( ${{ github.run_number }} - 1 ))
+            echo "=========================================="
+            echo "🔄 Starting Rollback"
+            echo "=========================================="
 
-            docker stop ecommerce-frontend || true
-            docker rm ecommerce-frontend || true
+            # Calculate previous tag
+            PREV_TAG=\$(( ${{ github.run_number }} - 1 ))
+            echo "Rolling back to tag: \$PREV_TAG"
 
-            docker run -d \
-              --name ecommerce-frontend \
-              --restart unless-stopped \
-              -p 3000:80 \
-              ${{ secrets.DOCKER_USERNAME }}/ecommerce-frontend:$PREVIOUS_TAG
+            # Stop current container
+            docker stop ecommerce-frontend 2>/dev/null || true
+            docker rm ecommerce-frontend 2>/dev/null || true
 
-            echo "🔄 Rollback completed"
-          EOF
+            # Try to run previous version
+            if docker pull $DOCKER_USERNAME/ecommerce-frontend:\$PREV_TAG 2>/dev/null; then
+              docker run -d \
+                --name ecommerce-frontend \
+                --restart unless-stopped \
+                -p 3000:80 \
+                $DOCKER_USERNAME/ecommerce-frontend:\$PREV_TAG
+              echo "✅ Rolled back to version \$PREV_TAG"
+            else
+              echo "⚠️ Previous version not found, keeping current state"
+            fi
 
-# =============================================================================
-# JOB 5: NOTIFICATION
-# =============================================================================
+            echo "=========================================="
+            echo "🔄 Rollback Complete"
+            echo "=========================================="
+          ENDSSH
+
+      - name: 📋 Rollback Summary
+        run: |
+          echo "### 🔄 Rollback Executed" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** Health check failed" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # JOB 5: NOTIFICATION
+  # ===========================================================================
   notify:
     name: 📧 Notify Team
     runs-on: ubuntu-latest
@@ -217,22 +297,63 @@ jobs:
     if: always()
 
     steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name:  📝 Get Commit Info
+        id: commit
+        run: |
+          echo "message=$(git log -1 --pretty=%B | head -1)" >> $GITHUB_OUTPUT
+          echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: 📧 Send Status Email
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ secrets.SMTP_HOST }}
+          server_address:  ${{ secrets.SMTP_HOST }}
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "[CD] Deployment Status - ${{ github.repository }}"
+          subject: "[CD] ${{ needs.health-check.result == 'success' && '✅ Deployed' || '❌ Failed' }} - ${{ github.repository }}"
           to: ${{ secrets.TESTER_EMAIL }}
           from: "CD Bot <${{ secrets.SMTP_USERNAME }}>"
           body: |
-            Repository: ${{ github.repository }}
-            Branch: ${{ github.ref_name }}
-            Build: ${{ needs.build-and-push.result }}
-            Deploy: ${{ needs.deploy.result }}
-            Health: ${{ needs.health-check.result }}
+            Deployment Status Report
+            ════════════════════════════════════════
 
-            Workflow:
-            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            📦 Repository: ${{ github.repository }}
+            🌿 Branch: ${{ github.ref_name }}
+            📝 Commit: ${{ steps.commit.outputs.sha }}
+            👤 Author: ${{ steps.commit.outputs.author }}
+            💬 Message: ${{ steps.commit.outputs.message }}
+
+            ════════════════════════════════════════
+            Pipeline Results:
+            ════════════════════════════════════════
+
+            🐳 Build: ${{ needs.build-and-push.result }}
+            🚀 Deploy: ${{ needs.deploy.result }}
+            🏥 Health: ${{ needs.health-check.result }}
+
+            ════════════════════════════════════════
+
+            🔗 Workflow:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            🌐 Application: http://${{ secrets.EC2_HOST }}:3000
+
+            ════════════════════════════════════════
+            CD Bot 🤖
+        continue-on-error: true
+
+      - name: 📊 Final Summary
+        if: always()
+        run: |
+          echo "## 📊 CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐳 Build & Push | ${{ needs.build-and-push.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Deploy | ${{ needs.deploy.result == 'success' && '✅' || needs.deploy.result == 'skipped' && '⏭️' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏥 Health Check | ${{ needs.health-check.result == 'success' && '✅' || needs.health-check.result == 'skipped' && '⏭️' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
