@@ -11,3 +11,4 @@ Production-ready CI/CD setup for Alphabit application with:
 
 Deployement Test
 SSH Open to 0.0.0.0/0
+Security Group - Custom TCP 0.0.0.0:3000
