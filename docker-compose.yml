@@ -5,28 +5,27 @@
 # All environment variables come from .env files.
 # ============================================================================
 
+version: "3.8"
+
 services:
   ecommerce-frontend:
+    image: ${DOCKER_USERNAME:-your-dockerhub-username}/ecommerce-frontend:latest
     container_name: ecommerce-frontend
-    build:
-      context: ./ecommerce-frontend
-      dockerfile: Dockerfile
-      args:
-        REACT_APP_API_URL: ${REACT_APP_API_URL}
-        REACT_APP_ENV: production
-    env_file:
-      - ./ecommerce-frontend/.env
+    restart: unless-stopped
     ports:
       - "3000:80"
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     networks:
       - app-network
+
+networks:
+  app-network: 
+    driver: bridge
 
     # depends_on:
     #   - ecommerce-backend
@@ -84,10 +83,6 @@ services:
   #     interval: 30s
   #     timeout: 10s
   #     retries: 3
-
-networks:
-  app-network:
-    driver: bridge
 
 # ===========================================
 # FUTURE SERVICES (Do not implement yet)
